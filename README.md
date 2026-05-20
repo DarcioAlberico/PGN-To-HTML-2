@@ -49,6 +49,8 @@ Também é aceito:
 
 O marcador é removido do texto final e o diagrama é gerado na posição após o lance comentado.
 
+Também é possível inserir um diagrama manualmente no HTML já gerado. Posicione o cursor no editor `HTML gerado` e clique em `Gerar Diagrama`; o aplicativo tenta identificar a posição correspondente no PGN e insere o diagrama naquele ponto do HTML.
+
 ## Modo exercícios
 
 Para transformar uma posição em exercício, adicione um marcador no comentário do lance:

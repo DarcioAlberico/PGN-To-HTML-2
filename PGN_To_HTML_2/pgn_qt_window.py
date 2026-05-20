@@ -462,7 +462,13 @@ class App:
         right_layout = QVBoxLayout(right_panel)
         right_layout.setContentsMargins(12, 12, 12, 12)
         right_layout.setSpacing(6)
-        right_layout.addWidget(self._make_section_label("HTML gerado"))
+        html_top = QHBoxLayout()
+        html_top.addWidget(self._make_section_label("HTML gerado"))
+        html_top.addStretch(1)
+        generate_diagram_button = QPushButton("Gerar Diagrama")
+        generate_diagram_button.clicked.connect(self.gerar_diagrama_no_html)
+        html_top.addWidget(generate_diagram_button)
+        right_layout.addLayout(html_top)
         self.txt_html = self._make_editor("Georgia", 12, editor_class=ClickAwarePlainTextEdit)
         self.txt_html.textChanged.connect(self.on_html_modified)
         self.txt_html.leftClicked.connect(self.on_html_editor_clicked)
@@ -581,6 +587,11 @@ class App:
     def get_current_css_text(self):
         css_text = self.txt_css.toPlainText()
         return css_text if css_text.strip() else self.build_selected_preset_css()
+
+    def get_effective_diagram_style(self):
+        if self.conversion_result is not None:
+            return self.conversion_result.diagram_style
+        return self.get_selected_diagram_style()
 
     def set_css_text(self, css_text):
         self.suspend_css_modified = True
@@ -1165,6 +1176,48 @@ class App:
 
         with open(os.path.join(output_dir, "style.css"), "w", encoding="utf-8") as file_obj:
             file_obj.write(self.get_current_css_text())
+
+    def gerar_diagrama_no_html(self):
+        pgn_text = self.txt_pgn.toPlainText().strip()
+        html_text = self.txt_html.toPlainText()
+        if not pgn_text or not html_text.strip():
+            QMessageBox.warning(self.window, "Gerar Diagrama", "Processe o PGN antes de gerar um diagrama.")
+            return
+
+        cursor = self.txt_html.textCursor()
+        insert_pos = cursor.position()
+        try:
+            fen = self.backend.infer_fen_from_html_cursor(pgn_text, html_text, insert_pos)
+            diagram_dir = os.path.join(os.path.abspath(self.pgn_dir or "."), "Diagrams")
+            diagram_result = self.backend.chess_diagrams.render_diagram_html(
+                fen,
+                output_dir=diagram_dir,
+                base_name="manual_diagram",
+                idx=insert_pos,
+                size=360,
+                style=self.get_effective_diagram_style(),
+                web_root=os.path.abspath(self.pgn_dir or "."),
+            )
+            snippet = "\n\n" + diagram_result["html"] + "\n" + self.backend._generate_analysis_links(fen) + "\n"
+            cursor.insertText(snippet)
+            self.txt_html.setTextCursor(cursor)
+
+            asset = diagram_result.get("asset")
+            if asset and self.conversion_result is not None:
+                self.conversion_result.diagram_assets.append(
+                    self.backend.DiagramAsset(
+                        fen=fen,
+                        svg_path=asset["svg_path"],
+                        png_path=asset["png_path"],
+                        web_path=asset["web_path"],
+                    )
+                )
+            self.html_viewer_dirty = True
+            self.update_viewer_pending_status()
+            self.schedule_html_viewer_update(250)
+            self.status_lbl.setText("Diagrama inserido no HTML.")
+        except Exception as exc:
+            QMessageBox.warning(self.window, "Gerar Diagrama", str(exc))
 
     def abrir(self):
         arq, _ = QFileDialog.getOpenFileName(self.window, "Abrir PGN", self.last_dir, "PGN (*.pgn)")

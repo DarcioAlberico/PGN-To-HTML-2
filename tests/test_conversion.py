@@ -6,6 +6,7 @@ import threading
 import unittest
 import zipfile
 
+import chess
 import chess.engine
 
 
@@ -153,6 +154,43 @@ class ConversionTests(unittest.TestCase):
             self.assertIn("Posicao depois de e4", result.blocks[0])
             self.assertNotIn("#diagram", result.blocks[0])
             self.assertIn(result.diagram_assets[0].web_path, result.blocks[0])
+
+    def test_infer_fen_from_html_cursor_after_move(self):
+        pgn = """[Event "CursorDiagram"]
+[Site "?"]
+[Date "2026.03.23"]
+[White "W"]
+[Black "B"]
+[Result "*"]
+
+1. e4 e5 2. Nf3 *
+"""
+        result = app.convert_pgn(pgn)
+        html_text = result.blocks[0]
+        cursor_offset = html_text.index("e5") + len("e5")
+        fen = app.infer_fen_from_html_cursor(pgn, html_text, cursor_offset)
+
+        board = chess.Board()
+        board.push_san("e4")
+        board.push_san("e5")
+        self.assertEqual(fen, board.fen())
+
+    def test_infer_fen_from_html_cursor_before_first_move(self):
+        pgn = """[Event "CursorInitial"]
+[Site "?"]
+[Date "2026.03.23"]
+[White "W"]
+[Black "B"]
+[Result "*"]
+
+1. d4 d5 *
+"""
+        result = app.convert_pgn(pgn)
+        html_text = result.blocks[0]
+        cursor_offset = html_text.index('<p class="mainline">')
+        fen = app.infer_fen_from_html_cursor(pgn, html_text, cursor_offset)
+
+        self.assertEqual(fen, chess.Board().fen())
 
     def test_empty_diagram_marker_comment_does_not_render_comment_text(self):
         pgn = """[Event "OnlyMarker"]

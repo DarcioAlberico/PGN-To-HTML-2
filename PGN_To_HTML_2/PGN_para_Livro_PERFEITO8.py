@@ -13,6 +13,7 @@ import queue
 import io
 import json
 from datetime import datetime
+from html import unescape as html_unescape
 from html.parser import HTMLParser
 from typing import Callable
 
@@ -147,6 +148,76 @@ def _render_move_analysis_badge(analysis):
     label = _escape_html(score or analysis.best_move)
     best_attr = f' data-best="{_escape_html(analysis.best_move)}"' if analysis.best_move else ""
     return f' <span class="engine-eval" title="{title}"{best_attr}>{label}</span>'
+
+
+def _strip_html_for_move_text(html_text):
+    html_text = re.sub(
+        r'<span\b[^>]*class=["\'][^"\']*\bengine-eval\b[^"\']*["\'][^>]*>.*?</span>',
+        "",
+        html_text,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    text = re.sub(r"<[^>]+>", " ", html_text)
+    text = html_unescape(text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _extract_mainline_text_before_cursor(section_html):
+    pieces = []
+    start_pattern = re.compile(r'<p\b[^>]*class=["\'][^"\']*\bmainline\b[^"\']*["\'][^>]*>', re.IGNORECASE)
+    for match in start_pattern.finditer(section_html):
+        content_start = match.end()
+        close_match = re.search(r"</p>", section_html[content_start:], re.IGNORECASE)
+        content_end = content_start + close_match.start() if close_match else len(section_html)
+        pieces.append(section_html[content_start:content_end])
+    return _strip_html_for_move_text(" ".join(pieces))
+
+
+def _count_rendered_mainline_moves(game, rendered_text):
+    if not rendered_text:
+        return 0
+
+    board = game.board()
+    cursor = 0
+    count = 0
+    for move in game.mainline_moves():
+        san = board.san(move)
+        pattern = re.compile(
+            rf"(?<![A-Za-z0-9+#=]){re.escape(san)}(?![A-Za-z0-9+#=])"
+        )
+        match = pattern.search(rendered_text, cursor)
+        if not match:
+            break
+        cursor = match.end()
+        count += 1
+        board.push(move)
+    return count
+
+
+def infer_fen_from_html_cursor(pgn_text, html_text, cursor_offset):
+    cursor_offset = max(0, min(int(cursor_offset or 0), len(html_text or "")))
+    before_cursor = (html_text or "")[:cursor_offset]
+    section_matches = list(
+        re.finditer(r'<section\b[^>]*\bid=["\']game-(\d+)["\'][^>]*>', before_cursor, re.IGNORECASE)
+    )
+    if not section_matches:
+        raise ValueError("Posicione o cursor dentro de uma partida no HTML.")
+
+    section_match = section_matches[-1]
+    game_index = int(section_match.group(1))
+    games = list(enumerate(iter_pgn_games(pgn_text or ""), start=1))
+    game = next((game for idx, game in games if idx == game_index), None)
+    if game is None:
+        raise ValueError(f"Partida {game_index} nao encontrada no PGN atual.")
+
+    section_html = before_cursor[section_match.start():]
+    mainline_text = _extract_mainline_text_before_cursor(section_html)
+    move_count = _count_rendered_mainline_moves(game, mainline_text)
+
+    board = game.board()
+    for move in list(game.mainline_moves())[:move_count]:
+        board.push(move)
+    return board.fen()
 
 
 def _render_notice(message, tone="warning"):
