@@ -72,6 +72,8 @@ Gerar diagramas manuais em uma pasta temporaria controlada pelo app e materializ
 
 ## 5. Baixo - Alteracao local em `print-a4.css` parece acidental
 
+Status: pendente de confirmacao. O diff atual mostra um bloco grande de CSS base duplicado no topo de `print-a4.css`, antes das regras do tema A4. A alteracao continua local e nao foi revertida nem enviada ao GitHub para evitar apagar uma mudanca possivelmente intencional.
+
 Arquivo relacionado:
 
 - `PGN_To_HTML_2/styles/print-a4.css`
@@ -86,5 +88,5 @@ Revisar manualmente o conteudo de `print-a4.css`. Se a alteracao foi acidental, 
 
 ## Validacao realizada
 
-- `python -m unittest discover -s tests -v`: 34 testes OK.
+- `python -m unittest discover -s tests -v`: 38 testes OK.
 - Repositorio sincronizado com `origin/main`, exceto a alteracao local em `PGN_To_HTML_2/styles/print-a4.css`.
