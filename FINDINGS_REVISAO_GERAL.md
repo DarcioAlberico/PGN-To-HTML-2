@@ -22,6 +22,8 @@ Criar um helper de caminho para recursos compatível com `sys._MEIPASS`, ou ajus
 
 ## 2. Medio - Preferencias locais podem nao persistir corretamente no executavel
 
+Status: implementado. As preferencias agora usam `app_settings.py`, salvando em uma pasta estavel do usuario (`%APPDATA%/PGN_To_HTML_2` no Windows, com fallback para `XDG_CONFIG_HOME` ou `~/.config`). O app ainda tenta ler o arquivo antigo do projeto quando o novo arquivo nao existe.
+
 Arquivos relacionados:
 
 - `PGN_To_HTML_2/pgn_qt_window.py`

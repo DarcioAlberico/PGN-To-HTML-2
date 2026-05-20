@@ -41,6 +41,11 @@ from PySide6.QtWidgets import (
 from PySide6.QtWebEngineCore import QWebEnginePage
 from PySide6.QtWebEngineWidgets import QWebEngineView
 
+try:
+    from .app_settings import ensure_settings_dir, get_settings_load_candidates, get_settings_path
+except ImportError:
+    from app_settings import ensure_settings_dir, get_settings_load_candidates, get_settings_path
+
 
 VIEWER_LINE_CLICK_PREFIX = "CODEx_VIEWER_LINE:"
 
@@ -223,7 +228,7 @@ class App:
         self.window.setWindowTitle("PGN → Livro de Xadrez (Vex. python-chess)")
         self.window.resize(1450, 920)
         self.project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-        self.settings_path = os.path.join(self.project_dir, ".pgn_to_html_settings.json")
+        self.settings_path = get_settings_path()
 
         self.blocks = None
         self.conversion_result = None
@@ -515,12 +520,16 @@ class App:
         return self.exercise_mode_combo.currentData() if hasattr(self, "exercise_mode_combo") else "book"
 
     def load_user_settings(self):
-        try:
-            with open(self.settings_path, "r", encoding="utf-8") as file_obj:
-                data = json.load(file_obj)
-            return data if isinstance(data, dict) else {}
-        except (OSError, json.JSONDecodeError):
-            return {}
+        for settings_path in get_settings_load_candidates(self.project_dir):
+            try:
+                with open(settings_path, "r", encoding="utf-8") as file_obj:
+                    data = json.load(file_obj)
+                return data if isinstance(data, dict) else {}
+            except FileNotFoundError:
+                continue
+            except (OSError, json.JSONDecodeError):
+                return {}
+        return {}
 
     def save_user_settings(self, *_args):
         if not hasattr(self, "engine_path_edit"):
@@ -532,6 +541,7 @@ class App:
             "last_dir": self.last_dir,
         }
         try:
+            ensure_settings_dir(self.settings_path)
             with open(self.settings_path, "w", encoding="utf-8") as file_obj:
                 json.dump(data, file_obj, indent=2)
         except OSError:

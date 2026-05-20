@@ -15,6 +15,7 @@ PROJECT_DIR = os.path.abspath(PROJECT_DIR)
 sys.path.insert(0, PROJECT_DIR)
 
 import PGN_para_Livro_PERFEITO8 as app
+import app_settings
 import chess_diagrams
 
 
@@ -30,6 +31,47 @@ class ConversionTests(unittest.TestCase):
         self.assertTrue(html_export.CSS.strip())
         self.assertIs(models.ConversionResult, app.ConversionResult)
         self.assertIs(pgn_validation.validate_pgn, app.validate_pgn)
+
+    def test_settings_path_uses_stable_appdata_dir(self):
+        old_appdata = os.environ.get("APPDATA")
+        old_xdg = os.environ.get("XDG_CONFIG_HOME")
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                os.environ["APPDATA"] = tmpdir
+                os.environ.pop("XDG_CONFIG_HOME", None)
+                settings_path = app_settings.get_settings_path()
+                self.assertEqual(
+                    settings_path,
+                    os.path.join(tmpdir, "PGN_To_HTML_2", ".pgn_to_html_settings.json"),
+                )
+                app_settings.ensure_settings_dir(settings_path)
+                self.assertTrue(os.path.isdir(os.path.dirname(settings_path)))
+        finally:
+            if old_appdata is None:
+                os.environ.pop("APPDATA", None)
+            else:
+                os.environ["APPDATA"] = old_appdata
+            if old_xdg is None:
+                os.environ.pop("XDG_CONFIG_HOME", None)
+            else:
+                os.environ["XDG_CONFIG_HOME"] = old_xdg
+
+    def test_settings_load_candidates_include_legacy_project_file(self):
+        old_appdata = os.environ.get("APPDATA")
+        try:
+            with tempfile.TemporaryDirectory() as appdata_dir, tempfile.TemporaryDirectory() as project_dir:
+                os.environ["APPDATA"] = appdata_dir
+                candidates = app_settings.get_settings_load_candidates(project_dir)
+                self.assertEqual(candidates[0], app_settings.get_settings_path())
+                self.assertIn(
+                    os.path.join(os.path.abspath(project_dir), ".pgn_to_html_settings.json"),
+                    candidates,
+                )
+        finally:
+            if old_appdata is None:
+                os.environ.pop("APPDATA", None)
+            else:
+                os.environ["APPDATA"] = old_appdata
 
     def test_validate_pgn_valid_game_has_no_issues(self):
         pgn = """[White "W"]

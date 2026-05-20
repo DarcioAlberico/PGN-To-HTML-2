@@ -23,6 +23,7 @@ import chess
 
 # Gerador dedicado de diagramas
 try:
+    from .app_settings import ensure_settings_dir, get_settings_load_candidates, get_settings_path
     from . import chess_diagrams
     from .engine_analysis import AnalysisCancelled, analyses_by_ply, analyze_game
     from .html_export import (
@@ -38,6 +39,7 @@ try:
     from .pdf_export import write_pdf_file
     from .pgn_validation import format_validation_report, validate_pgn
 except ImportError:
+    from app_settings import ensure_settings_dir, get_settings_load_candidates, get_settings_path
     import chess_diagrams
     from engine_analysis import AnalysisCancelled, analyses_by_ply, analyze_game
     from html_export import (
@@ -1539,7 +1541,7 @@ class LegacyTkApp:
         self.root.geometry("1450x920")
         self.root.configure(bg="#f4f4f4")
         self.project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-        self.settings_path = os.path.join(self.project_dir, ".pgn_to_html_settings.json")
+        self.settings_path = get_settings_path()
         self.user_settings = self.load_user_settings()
         
         self.blocks = None
@@ -1763,18 +1765,23 @@ class LegacyTkApp:
         return self.exercise_mode_options.get(self.exercise_mode_label.get(), "book")
 
     def load_user_settings(self):
-        try:
-            with open(self.settings_path, "r", encoding="utf-8") as file_obj:
-                data = json.load(file_obj)
-            return data if isinstance(data, dict) else {}
-        except (OSError, json.JSONDecodeError):
-            return {}
+        for settings_path in get_settings_load_candidates(self.project_dir):
+            try:
+                with open(settings_path, "r", encoding="utf-8") as file_obj:
+                    data = json.load(file_obj)
+                return data if isinstance(data, dict) else {}
+            except FileNotFoundError:
+                continue
+            except (OSError, json.JSONDecodeError):
+                return {}
+        return {}
 
     def save_user_settings(self):
         data = dict(self.user_settings)
         data["last_dir"] = self.last_dir
         self.user_settings = data
         try:
+            ensure_settings_dir(self.settings_path)
             with open(self.settings_path, "w", encoding="utf-8") as file_obj:
                 json.dump(data, file_obj, indent=2)
         except OSError:
