@@ -1,6 +1,6 @@
 # PGN To HTML 2
 
-Aplicativo para converter arquivos PGN em livros de xadrez com saída em HTML, EPUB e DOCX. O projeto usa `python-chess` para ler partidas, gera diagramas em SVG/PNG ou em fonte de xadrez, e inclui uma interface Qt com preview HTML.
+Aplicativo para converter arquivos PGN em livros de xadrez com saída em HTML, EPUB, DOCX e PDF. O projeto usa `python-chess` para ler partidas, gera diagramas em SVG/PNG ou em fonte de xadrez, e inclui uma interface Qt com preview HTML.
 
 ## Instalação
 
@@ -163,6 +163,8 @@ python -m unittest discover -s tests -v
 - `PGN_To_HTML_2/converter.py`: API preferida para novas integrações de conversão.
 - `PGN_To_HTML_2/models.py`: modelos de resultado e assets.
 - `PGN_To_HTML_2/html_export.py`: CSS, HTML final e gravação do bundle HTML.
+- `PGN_To_HTML_2/pdf_export.py`: exportação PDF via Playwright/Chromium.
+- `PGN_To_HTML_2/engine_analysis.py`: análise opcional com Stockfish.
 - `PGN_To_HTML_2/pgn_qt_window.py`: interface Qt/PySide6.
 - `PGN_To_HTML_2/chess_diagrams.py`: geração de diagramas e suporte a fontes.
 - `archive/diagramas_legacy.py`: versão Tkinter legada mantida apenas para referência.

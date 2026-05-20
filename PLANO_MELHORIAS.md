@@ -913,6 +913,8 @@ Status: concluido. As mitigações foram registradas no código e na documentaç
 
 ## 19. Meta final
 
+Status: concluido. O ciclo de melhorias entregou parser robusto, refatoração em módulos, exportações HTML/EPUB/DOCX/PDF, temas, sumário, filtros, validação, cache de diagramas, preview avançado, exercícios e análise opcional com Stockfish.
+
 Ao final, o aplicativo deve ser:
 
 - mais confiável para PGNs variados;
