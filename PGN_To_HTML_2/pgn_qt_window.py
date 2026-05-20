@@ -377,6 +377,7 @@ class App:
         self.splitter.addWidget(self.left_tabs)
 
         self._build_tabs()
+        self._build_tabs_corner_actions()
         self._build_html_panel()
         self.left_tabs.currentChanged.connect(self.on_left_tab_changed)
         self.splitter.setSizes([640, 810])
@@ -457,18 +458,23 @@ class App:
         css_layout.addWidget(self.txt_css, 1)
         self.left_tabs.addTab(css_tab, "CSS")
 
+    def _build_tabs_corner_actions(self):
+        self.generate_diagram_tab_button = QPushButton("Gerar Diagrama")
+        self.generate_diagram_tab_button.setToolTip(
+            "Insere um diagrama no HTML gerado usando a posição do cursor."
+        )
+        self.generate_diagram_tab_button.clicked.connect(self.gerar_diagrama_no_html)
+        self.left_tabs.setCornerWidget(
+            self.generate_diagram_tab_button,
+            Qt.Corner.TopRightCorner,
+        )
+
     def _build_html_panel(self):
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
         right_layout.setContentsMargins(12, 12, 12, 12)
         right_layout.setSpacing(6)
-        html_top = QHBoxLayout()
-        html_top.addWidget(self._make_section_label("HTML gerado"))
-        html_top.addStretch(1)
-        generate_diagram_button = QPushButton("Gerar Diagrama")
-        generate_diagram_button.clicked.connect(self.gerar_diagrama_no_html)
-        html_top.addWidget(generate_diagram_button)
-        right_layout.addLayout(html_top)
+        right_layout.addWidget(self._make_section_label("HTML gerado"))
         self.txt_html = self._make_editor("Georgia", 12, editor_class=ClickAwarePlainTextEdit)
         self.txt_html.textChanged.connect(self.on_html_modified)
         self.txt_html.leftClicked.connect(self.on_html_editor_clicked)
