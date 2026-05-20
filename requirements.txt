@@ -1,0 +1,8 @@
+python-chess
+PySide6
+ebooklib
+python-docx
+cairosvg
+Pillow
+fonttools
+playwright

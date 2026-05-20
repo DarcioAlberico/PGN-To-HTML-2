@@ -1,0 +1,32 @@
+body {
+    max-width: 780px;
+    background: #f7fafc;
+    color: #17202a;
+    font-family: "Georgia", "Palatino Linotype", serif;
+}
+
+.headers {
+    border-bottom-color: #2f4858;
+}
+
+.diagram img,
+.diagram--merida .chess-merida-diagram {
+    border: 2px solid #2f4858;
+    box-shadow: 0 2px 8px rgba(47, 72, 88, 0.22);
+}
+
+p.comment {
+    background: #fff7db;
+    border-left-color: #d99000;
+    font-style: normal;
+}
+
+p.variant {
+    background: #eef7ff;
+    border-left-color: #2b6cb0;
+    font-style: italic;
+}
+
+.toc {
+    border-bottom-color: #2f4858;
+}

@@ -1,0 +1,28 @@
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    max-width: 860px;
+    background: #ffffff;
+    color: #1f2933;
+    line-height: 1.65;
+}
+
+.headers {
+    border-bottom: 1px solid #b8c2cc;
+    font-variant: normal;
+    font-size: 1.2em;
+}
+
+p.comment {
+    background: #eef4f8;
+    border-left-color: #3b82f6;
+    font-style: normal;
+}
+
+p.variant {
+    background: #f5f7fa;
+    border-left-color: #9aa5b1;
+}
+
+.toc {
+    border-bottom-color: #b8c2cc;
+}
