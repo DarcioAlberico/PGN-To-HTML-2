@@ -2719,9 +2719,9 @@ class LegacyTkApp:
                     uid="style",
                     file_name="style/style.css",
                     media_type="text/css",
-                    content=build_css(
-                        diagram_style=result.diagram_style,
-                        font_href=chess_diagrams.get_diagram_font_href(result.diagram_style),
+                    content=ensure_diagram_font_css(
+                        self.get_current_css_text(),
+                        result.diagram_style,
                     ).encode(),
                 )
                 book.add_item(style)

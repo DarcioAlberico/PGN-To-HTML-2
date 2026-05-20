@@ -1575,9 +1575,9 @@ class App:
                     uid="style",
                     file_name="style/style.css",
                     media_type="text/css",
-                    content=self.backend.build_css(
-                        diagram_style=result.diagram_style,
-                        font_href=self.backend.chess_diagrams.get_diagram_font_href(result.diagram_style),
+                    content=self.backend.ensure_diagram_font_css(
+                        self.get_current_css_text(),
+                        result.diagram_style,
                     ).encode(),
                 )
                 book.add_item(style)

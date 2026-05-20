@@ -39,6 +39,8 @@ Salvar preferencias em uma pasta estavel, por exemplo `%APPDATA%/PGN_To_HTML_2/`
 
 ## 3. Medio - Exportacao EPUB nao respeita CSS selecionado ou customizado
 
+Status: implementado. A exportacao EPUB no Qt e no Tkinter agora usa `get_current_css_text()`, preservando o tema selecionado ou CSS editado pelo usuario. O CSS tambem passa por `ensure_diagram_font_css(...)` para manter os recursos de fonte de diagramas quando necessario.
+
 Arquivos relacionados:
 
 - `PGN_To_HTML_2/pgn_qt_window.py`
