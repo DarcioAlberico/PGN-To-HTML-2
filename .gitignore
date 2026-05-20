@@ -28,6 +28,7 @@ Thumbs.db
 
 # Local PGN files and generated application outputs
 PGN/
+**/Diagrams/
 *.docx
 *.epub
 *.pdf

@@ -80,6 +80,11 @@ class ConversionTests(unittest.TestCase):
         self.assertIn("Impressão A4", options)
         self.assertIn("E-reader", options)
         self.assertIn("Estudo tático", options)
+        self.assertIn("Clássico sem fundo", options)
+        self.assertIn("Moderno limpo sem fundo", options)
+        self.assertIn("Impressão A4 sem fundo", options)
+        self.assertIn("E-reader sem fundo", options)
+        self.assertIn("Estudo tático sem fundo", options)
 
         for preset in options.values():
             css_text = html_export.load_css_preset(preset)
@@ -89,6 +94,11 @@ class ConversionTests(unittest.TestCase):
 
         modern_css = html_export.load_css_preset("modern")
         self.assertIn("Segoe UI", modern_css)
+
+        plain_css = html_export.load_css_preset("modern-plain")
+        self.assertIn("Segoe UI", plain_css)
+        self.assertRegex(plain_css, r"p\.comment,\s*p\.variant\s*\{[^}]*background:\s*transparent")
+        self.assertRegex(plain_css, r"p\.comment,\s*p\.variant\s*\{[^}]*border-left:\s*none")
 
     def test_css_preset_keeps_merida_font_face(self):
         import html_export

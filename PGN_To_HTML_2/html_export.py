@@ -17,6 +17,11 @@ STYLE_PRESETS = {
     "print-a4": ("Impressão A4", "print-a4.css"),
     "ereader": ("E-reader", "ereader.css"),
     "tactics": ("Estudo tático", "tactics.css"),
+    "classic-plain": ("Clássico sem fundo", "comments-plain.css"),
+    "modern-plain": ("Moderno limpo sem fundo", ("modern.css", "comments-plain.css")),
+    "print-a4-plain": ("Impressão A4 sem fundo", ("print-a4.css", "comments-plain.css")),
+    "ereader-plain": ("E-reader sem fundo", ("ereader.css", "comments-plain.css")),
+    "tactics-plain": ("Estudo tático sem fundo", ("tactics.css", "comments-plain.css")),
 }
 
 
@@ -213,13 +218,18 @@ def get_css_preset_options():
 @lru_cache(maxsize=None)
 def _load_preset_override(preset):
     preset_key = normalize_css_preset(preset)
-    filename = STYLE_PRESETS[preset_key][1]
-    if not filename:
+    filenames = STYLE_PRESETS[preset_key][1]
+    if not filenames:
         return ""
+    if isinstance(filenames, str):
+        filenames = (filenames,)
 
-    style_path = os.path.join(os.path.dirname(__file__), "styles", filename)
-    with open(style_path, "r", encoding="utf-8") as file_obj:
-        return file_obj.read().strip()
+    css_parts = []
+    for filename in filenames:
+        style_path = os.path.join(os.path.dirname(__file__), "styles", filename)
+        with open(style_path, "r", encoding="utf-8") as file_obj:
+            css_parts.append(file_obj.read().strip())
+    return "\n\n".join(part for part in css_parts if part)
 
 
 def normalize_css_preset(preset):
@@ -229,17 +239,29 @@ def normalize_css_preset(preset):
         "classico": "classic",
         "clássico": "classic",
         "classic": "classic",
+        "classic-plain": "classic-plain",
+        "classico-sem-fundo": "classic-plain",
+        "clássico-sem-fundo": "classic-plain",
         "modern": "modern",
         "moderno": "modern",
+        "modern-plain": "modern-plain",
+        "moderno-sem-fundo": "modern-plain",
         "print": "print-a4",
         "print-a4": "print-a4",
         "a4": "print-a4",
+        "print-a4-plain": "print-a4-plain",
+        "a4-sem-fundo": "print-a4-plain",
         "ereader": "ereader",
         "e-reader": "ereader",
         "kindle": "ereader",
+        "ereader-plain": "ereader-plain",
+        "e-reader-sem-fundo": "ereader-plain",
         "tactics": "tactics",
         "tatico": "tactics",
         "tático": "tactics",
+        "tactics-plain": "tactics-plain",
+        "tatico-sem-fundo": "tactics-plain",
+        "tático-sem-fundo": "tactics-plain",
     }
     normalized = aliases.get(preset_key, preset_key)
     if normalized not in STYLE_PRESETS:

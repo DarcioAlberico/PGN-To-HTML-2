@@ -158,6 +158,11 @@ A interface oferece presets de tema no seletor "Tema":
 - Impressão A4
 - E-reader
 - Estudo tático
+- Clássico sem fundo
+- Moderno limpo sem fundo
+- Impressão A4 sem fundo
+- E-reader sem fundo
+- Estudo tático sem fundo
 
 Os presets ficam em `PGN_To_HTML_2/styles/` e são aplicados sobre o CSS base, mantendo compatibilidade com diagramas clássicos e fontes de xadrez.
 
