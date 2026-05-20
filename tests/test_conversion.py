@@ -5,6 +5,8 @@ import tempfile
 import unittest
 import zipfile
 
+import chess.engine
+
 
 PROJECT_DIR = os.path.join(os.path.dirname(__file__), "..", "PGN_To_HTML_2")
 PROJECT_DIR = os.path.abspath(PROJECT_DIR)
@@ -218,6 +220,58 @@ class ConversionTests(unittest.TestCase):
             self.assertEqual(len(result.blocks), 2)
             self.assertIn('class="headers"', result.blocks[0])
             self.assertIn('class="exercise"', result.blocks[1])
+
+    def test_engine_analysis_is_optional_and_renders_badge(self):
+        class FakeEngine:
+            def analyse(self, board, limit):
+                return {
+                    "score": chess.engine.PovScore(chess.engine.Cp(34), chess.WHITE),
+                    "pv": list(board.legal_moves)[:1],
+                }
+
+            def quit(self):
+                self.closed = True
+
+        pgn = """[Event "Engine"]
+[White "W"]
+[Black "B"]
+[Result "*"]
+
+1. e4 e5 *
+"""
+        result = app.convert_pgn(
+            pgn,
+            include_engine_analysis=True,
+            engine_path="fake-stockfish",
+            engine_depth=3,
+            engine_factory=lambda _path: FakeEngine(),
+        )
+
+        self.assertEqual(len(result.analyses), 2)
+        self.assertIn('class="engine-eval"', result.blocks[0])
+        self.assertIn("+0.34", result.blocks[0])
+
+    def test_engine_analysis_failure_is_warning_only(self):
+        def broken_factory(_path):
+            raise RuntimeError("engine missing")
+
+        pgn = """[Event "EngineFail"]
+[White "W"]
+[Black "B"]
+[Result "*"]
+
+1. d4 d5 *
+"""
+        result = app.convert_pgn(
+            pgn,
+            include_engine_analysis=True,
+            engine_path="missing-stockfish",
+            engine_factory=broken_factory,
+        )
+
+        self.assertEqual(len(result.blocks), 1)
+        self.assertIn("1. d4 d5", result.blocks[0])
+        self.assertTrue(any("Stockfish" in warning for warning in result.warnings))
 
     def test_classic_diagram_cache_reuses_same_asset_for_same_fen(self):
         fen = "8/8/8/8/8/8/8/K6k w - - 0 1"

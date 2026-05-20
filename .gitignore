@@ -37,3 +37,4 @@ _tmp_*.png
 *.tmp
 *.bak
 ~$*
+.pgn_to_html_settings.json

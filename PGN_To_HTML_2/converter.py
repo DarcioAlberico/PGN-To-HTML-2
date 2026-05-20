@@ -9,6 +9,7 @@ o backend legado para preservar compatibilidade durante a refatoração gradual.
 try:
     from .PGN_para_Livro_PERFEITO8 import (
         GameHtmlBuilder,
+        analyze_game,
         convert_pgn,
         fallback_parse_game,
         format_validation_report,
@@ -21,6 +22,7 @@ try:
 except ImportError:
     from PGN_para_Livro_PERFEITO8 import (
         GameHtmlBuilder,
+        analyze_game,
         convert_pgn,
         fallback_parse_game,
         format_validation_report,
@@ -33,6 +35,7 @@ except ImportError:
 
 __all__ = [
     "GameHtmlBuilder",
+    "analyze_game",
     "convert_pgn",
     "fallback_parse_game",
     "format_validation_report",

@@ -137,6 +137,19 @@ footer {
 .lichess-btn { background-color: #363636; border-bottom: 2px solid #1b1b1b; }
 .chesscom-btn { background-color: #7fa650; border-bottom: 2px solid #5d7c38; }
 
+.engine-eval {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 1px 5px;
+    border-radius: 6px;
+    background: #eef3f8;
+    color: #2c3e50;
+    border: 1px solid #d5e0ea;
+    font-size: 0.78em;
+    font-family: Arial, sans-serif;
+    vertical-align: baseline;
+}
+
 .toc {
     margin: 20px 0 60px;
     padding-bottom: 28px;

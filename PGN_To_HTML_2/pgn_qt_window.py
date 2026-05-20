@@ -1,4 +1,5 @@
 import base64
+import json
 import os
 import queue
 import re
@@ -28,6 +29,7 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QProgressBar,
     QPushButton,
+    QSpinBox,
     QSplitter,
     QTabWidget,
     QTableWidget,
@@ -221,6 +223,7 @@ class App:
         self.window.setWindowTitle("PGN → Livro de Xadrez (Vex. python-chess)")
         self.window.resize(1450, 920)
         self.project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        self.settings_path = os.path.join(self.project_dir, ".pgn_to_html_settings.json")
 
         self.blocks = None
         self.conversion_result = None
@@ -244,6 +247,7 @@ class App:
             "Somente exercícios": "exercises",
             "Livro + exercícios": "both",
         }
+        self.user_settings = self.load_user_settings()
 
         self.html_viewer_timer = QTimer()
         self.html_viewer_timer.setSingleShot(True)
@@ -333,6 +337,30 @@ class App:
         options_row.addWidget(self.exercise_mode_combo)
         options_row.addStretch(1)
         top_layout.addLayout(options_row)
+
+        engine_row = QHBoxLayout()
+        engine_row.addStretch(1)
+        self.engine_enabled_checkbox = QCheckBox("Análise Stockfish")
+        self.engine_enabled_checkbox.setChecked(bool(self.user_settings.get("engine_enabled", False)))
+        self.engine_enabled_checkbox.toggled.connect(self.save_user_settings)
+        engine_row.addWidget(self.engine_enabled_checkbox)
+        self.engine_path_edit = QLineEdit()
+        self.engine_path_edit.setPlaceholderText("Caminho do stockfish.exe")
+        self.engine_path_edit.setText(self.user_settings.get("engine_path", ""))
+        self.engine_path_edit.setMinimumWidth(340)
+        self.engine_path_edit.editingFinished.connect(self.save_user_settings)
+        engine_row.addWidget(self.engine_path_edit)
+        engine_browse_button = QPushButton("Escolher")
+        engine_browse_button.clicked.connect(self.choose_engine_path)
+        engine_row.addWidget(engine_browse_button)
+        engine_row.addWidget(QLabel("Profundidade:"))
+        self.engine_depth_spin = QSpinBox()
+        self.engine_depth_spin.setRange(1, 30)
+        self.engine_depth_spin.setValue(int(self.user_settings.get("engine_depth", 12) or 12))
+        self.engine_depth_spin.valueChanged.connect(self.save_user_settings)
+        engine_row.addWidget(self.engine_depth_spin)
+        engine_row.addStretch(1)
+        top_layout.addLayout(engine_row)
         root_layout.addWidget(top)
 
         self.splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -467,6 +495,52 @@ class App:
 
     def get_selected_exercise_mode(self):
         return self.exercise_mode_combo.currentData() if hasattr(self, "exercise_mode_combo") else "book"
+
+    def load_user_settings(self):
+        try:
+            with open(self.settings_path, "r", encoding="utf-8") as file_obj:
+                data = json.load(file_obj)
+            return data if isinstance(data, dict) else {}
+        except (OSError, json.JSONDecodeError):
+            return {}
+
+    def save_user_settings(self, *_args):
+        if not hasattr(self, "engine_path_edit"):
+            return
+        data = {
+            "engine_enabled": self.engine_enabled_checkbox.isChecked(),
+            "engine_path": self.engine_path_edit.text().strip(),
+            "engine_depth": self.engine_depth_spin.value(),
+        }
+        try:
+            with open(self.settings_path, "w", encoding="utf-8") as file_obj:
+                json.dump(data, file_obj, indent=2)
+        except OSError:
+            pass
+
+    def choose_engine_path(self):
+        current = self.engine_path_edit.text().strip()
+        start_dir = os.path.dirname(current) if current else ""
+        path, _ = QFileDialog.getOpenFileName(
+            self.window,
+            "Selecionar Stockfish",
+            start_dir,
+            "Executáveis (*.exe);;Todos (*.*)",
+        )
+        if path:
+            self.engine_path_edit.setText(path)
+            self.engine_enabled_checkbox.setChecked(True)
+            self.save_user_settings()
+
+    def get_engine_options(self):
+        enabled = self.engine_enabled_checkbox.isChecked() if hasattr(self, "engine_enabled_checkbox") else False
+        engine_path = self.engine_path_edit.text().strip() if hasattr(self, "engine_path_edit") else ""
+        engine_depth = self.engine_depth_spin.value() if hasattr(self, "engine_depth_spin") else 12
+        return {
+            "include_engine_analysis": bool(enabled and engine_path),
+            "engine_path": engine_path,
+            "engine_depth": engine_depth,
+        }
 
     def build_selected_preset_css(self):
         return self.backend.load_css_preset(
@@ -1244,6 +1318,8 @@ class App:
         self.progress_bar.setRange(0, 0)
         self.status_lbl.setText("Processando...")
         diagram_style = self.get_selected_diagram_style()
+        engine_options = self.get_engine_options()
+        self.save_user_settings()
 
         threading.Thread(
             target=self.backend.processar_pgn_worker,
@@ -1254,6 +1330,9 @@ class App:
                 diagram_style,
                 self.selected_game_indexes,
                 self.get_selected_exercise_mode(),
+                engine_options["engine_path"],
+                engine_options["engine_depth"],
+                engine_options["include_engine_analysis"],
             ),
             daemon=True,
         ).start()
@@ -1347,12 +1426,14 @@ class App:
 
         try:
             with tempfile.TemporaryDirectory(prefix="pgn_epub_") as temp_dir:
+                engine_options = self.get_engine_options()
                 result = self.backend.convert_pgn(
                     texto,
                     output_dir=temp_dir,
                     diagram_style=self.get_selected_diagram_style(),
                     selected_game_indexes=self.selected_game_indexes,
                     exercise_mode=self.get_selected_exercise_mode(),
+                    **engine_options,
                 )
                 book = self.backend.epub.EpubBook()
                 book.set_title("Livro de Xadrez - PGN")
@@ -1443,12 +1524,14 @@ class App:
         if not arq:
             return
         try:
+            engine_options = self.get_engine_options()
             result = self.backend.convert_pgn(
                 texto,
                 output_dir=os.path.dirname(arq),
                 diagram_style=self.get_selected_diagram_style(),
                 selected_game_indexes=self.selected_game_indexes,
                 exercise_mode=self.get_selected_exercise_mode(),
+                **engine_options,
             )
             self.backend.write_docx_file(arq, result)
             self.conversion_result = result
@@ -1468,12 +1551,14 @@ class App:
             return
         try:
             with tempfile.TemporaryDirectory(prefix="pgn_pdf_source_") as temp_dir:
+                engine_options = self.get_engine_options()
                 result = self.backend.convert_pgn(
                     texto,
                     output_dir=temp_dir,
                     diagram_style=self.get_selected_diagram_style(),
                     selected_game_indexes=self.selected_game_indexes,
                     exercise_mode=self.get_selected_exercise_mode(),
+                    **engine_options,
                 )
                 css_text = self.get_current_css_text() if self.css_user_modified else None
                 self.backend.write_pdf_file(arq, result, css_text=css_text)

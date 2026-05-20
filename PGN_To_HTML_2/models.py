@@ -56,11 +56,34 @@ class ExerciseItem:
 
 
 @dataclass
+class MoveAnalysis:
+    game_index: int
+    ply: int
+    san: str
+    fen: str
+    score_cp: int | None = None
+    mate: int | None = None
+    best_move: str = ""
+
+    @property
+    def display_score(self):
+        if self.mate is not None:
+            sign = "+" if self.mate > 0 else ""
+            return f"M{sign}{self.mate}"
+        if self.score_cp is None:
+            return ""
+        value = self.score_cp / 100
+        sign = "+" if value > 0 else ""
+        return f"{sign}{value:.2f}"
+
+
+@dataclass
 class ConversionResult:
     blocks: List[str] = field(default_factory=list)
     summaries: List[GameSummary] = field(default_factory=list)
     exercise_blocks: List[str] = field(default_factory=list)
     exercises: List[ExerciseItem] = field(default_factory=list)
+    analyses: List[MoveAnalysis] = field(default_factory=list)
     diagram_assets: List[DiagramAsset] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
     diagram_style: str = chess_diagrams.CLASSIC_DIAGRAM_STYLE

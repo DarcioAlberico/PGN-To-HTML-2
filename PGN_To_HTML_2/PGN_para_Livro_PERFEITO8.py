@@ -22,6 +22,7 @@ import chess
 # Gerador dedicado de diagramas
 try:
     from . import chess_diagrams
+    from .engine_analysis import analyses_by_ply, analyze_game
     from .html_export import (
         CSS,
         build_css,
@@ -31,11 +32,12 @@ try:
         load_css_preset,
         write_html_bundle,
     )
-    from .models import ConversionResult, DiagramAsset, ExerciseItem, GameSummary
+    from .models import ConversionResult, DiagramAsset, ExerciseItem, GameSummary, MoveAnalysis
     from .pdf_export import write_pdf_file
     from .pgn_validation import format_validation_report, validate_pgn
 except ImportError:
     import chess_diagrams
+    from engine_analysis import analyses_by_ply, analyze_game
     from html_export import (
         CSS,
         build_css,
@@ -45,7 +47,7 @@ except ImportError:
         load_css_preset,
         write_html_bundle,
     )
-    from models import ConversionResult, DiagramAsset, ExerciseItem, GameSummary
+    from models import ConversionResult, DiagramAsset, ExerciseItem, GameSummary, MoveAnalysis
     from pdf_export import write_pdf_file
     from pgn_validation import format_validation_report, validate_pgn
 
@@ -127,6 +129,23 @@ def _generate_analysis_links(fen):
         <a href="{chesscom_url}" target="_blank" class="chesscom-btn">Chess.com</a>
     </div>
     '''
+
+
+def _render_move_analysis_badge(analysis):
+    if not analysis:
+        return ""
+    score = analysis.display_score
+    if not score and not analysis.best_move:
+        return ""
+    title_parts = []
+    if score:
+        title_parts.append(f"Avaliacao: {score}")
+    if analysis.best_move:
+        title_parts.append(f"Melhor lance: {analysis.best_move}")
+    title = _escape_html(" | ".join(title_parts))
+    label = _escape_html(score or analysis.best_move)
+    best_attr = f' data-best="{_escape_html(analysis.best_move)}"' if analysis.best_move else ""
+    return f' <span class="engine-eval" title="{title}"{best_attr}>{label}</span>'
 
 
 def _render_notice(message, tone="warning"):
@@ -297,7 +316,7 @@ def get_nag_symbol(nag_int):
 # ====================== WALKER DE JOGO (Visitor Pattern) ======================
 
 class GameHtmlBuilder:
-    def __init__(self, diagram_style=chess_diagrams.CLASSIC_DIAGRAM_STYLE):
+    def __init__(self, diagram_style=chess_diagrams.CLASSIC_DIAGRAM_STYLE, move_analyses=None):
         self.html_parts = []
         self.exercise_parts = []
         self.exercises = []
@@ -305,6 +324,7 @@ class GameHtmlBuilder:
         self.warnings = []
         self.diagram_style = chess_diagrams.normalize_diagram_style(diagram_style)
         self.diagram_counter = 0
+        self.move_analyses = analyses_by_ply(move_analyses)
     
     def render_diagram_block(self, fen, output_dir, base_name, game_idx, warning_label):
         self.diagram_counter += 1
@@ -536,6 +556,10 @@ class GameHtmlBuilder:
             # NAGs
             for nag in next_node.nags:
                 move_str += get_nag_symbol(nag)
+
+            move_analysis = self.move_analyses.get(board.ply() + 1)
+            if move_analysis:
+                move_str += _render_move_analysis_badge(move_analysis)
             
             current_mainline_buffer.append(move_str)
             
@@ -750,6 +774,10 @@ def convert_pgn(
     diagram_style=chess_diagrams.CLASSIC_DIAGRAM_STYLE,
     selected_game_indexes=None,
     exercise_mode="book",
+    engine_path=None,
+    engine_depth=12,
+    include_engine_analysis=False,
+    engine_factory=None,
 ):
     """
     Converte um texto PGN em HTML e ativos associados.
@@ -797,7 +825,24 @@ def convert_pgn(
             for game_error in game_errors:
                 result.warnings.append(f"Partida {count}: erro de PGN: {game_error}")
 
-            builder = GameHtmlBuilder(diagram_style=normalized_style)
+            move_analyses = []
+            if include_engine_analysis and engine_path:
+                try:
+                    move_analyses = analyze_game(
+                        game,
+                        engine_path,
+                        depth=engine_depth,
+                        game_index=count,
+                        engine_factory=engine_factory,
+                        progress_callback=progress_callback,
+                    )
+                    result.analyses.extend(move_analyses)
+                except Exception as engine_exc:
+                    result.warnings.append(
+                        f"Partida {count}: analise Stockfish ignorada ({engine_exc})."
+                    )
+
+            builder = GameHtmlBuilder(diagram_style=normalized_style, move_analyses=move_analyses)
             html_block = builder.process_game(game, count, output_dir=output_dir)
             result.summaries.append(build_game_summary(game, count))
             result.exercise_blocks.extend(builder.exercise_parts)
@@ -852,6 +897,9 @@ def processar_pgn_worker(
     diagram_style=chess_diagrams.CLASSIC_DIAGRAM_STYLE,
     selected_game_indexes=None,
     exercise_mode="book",
+    engine_path=None,
+    engine_depth=12,
+    include_engine_analysis=False,
 ):
     def _progress(message):
         progress_queue.put(("status", message))
@@ -864,6 +912,9 @@ def processar_pgn_worker(
             diagram_style=diagram_style,
             selected_game_indexes=selected_game_indexes,
             exercise_mode=exercise_mode,
+            engine_path=engine_path,
+            engine_depth=engine_depth,
+            include_engine_analysis=include_engine_analysis,
         )
         progress_queue.put(("done", result))
     except Exception as exc:

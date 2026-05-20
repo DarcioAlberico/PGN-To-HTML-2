@@ -670,6 +670,8 @@ diagram_<hash>.png
 
 ## 13. Integração com Stockfish
 
+Status: concluido na UI Qt e no backend. Foi criado `engine_analysis.py`, o conversor aceita análise opcional com Stockfish, renderiza avaliações discretas no HTML e mantém a conversão normal quando o motor não está configurado ou falha.
+
 ### Objetivo
 
 Adicionar análise opcional de motor.
@@ -855,6 +857,8 @@ Tornar o preview mais útil para livros grandes.
 15. Integração Stockfish.
 
 ## 17. Checklist de qualidade por etapa
+
+Status: concluido para o ciclo atual. A suite automatizada foi ampliada para 30 testes, cobrindo conversão, diagramas, cache, validação, seleção de partidas, PDF, exercícios e análise Stockfish mockada.
 
 Antes de concluir cada fase:
 

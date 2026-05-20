@@ -58,6 +58,20 @@ A interface tem o seletor `Exercícios` com três modos:
 - `Somente exercícios`: gera apenas os blocos de exercícios.
 - `Livro + exercícios`: gera o livro normal seguido pelos exercícios.
 
+## Análise Stockfish
+
+A interface Qt tem a opção `Análise Stockfish`. Para usar:
+
+1. Baixe o executável do Stockfish para o seu sistema.
+2. Marque `Análise Stockfish`.
+3. Escolha o caminho do `stockfish.exe`.
+4. Ajuste a profundidade.
+5. Processe ou exporte normalmente.
+
+Quando ativada, a análise adiciona uma pequena avaliação ao lado de cada lance, com tooltip indicando avaliação e melhor lance sugerido. A análise é opcional: sem caminho de motor, a conversão continua normal. Se o motor falhar, o aplicativo registra um aviso e mantém a exportação.
+
+As preferências locais do motor ficam em `.pgn_to_html_settings.json`, arquivo ignorado pelo Git.
+
 ## Sumário
 
 O HTML final inclui automaticamente um sumário navegável quando o PGN tem uma ou mais partidas. Cada partida recebe um identificador estável, como `game-1`, `game-2`, e o índice usa os metadados do PGN: jogadores, ECO, evento, local, data e resultado.
