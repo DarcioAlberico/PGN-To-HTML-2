@@ -80,6 +80,11 @@ class ConversionTests(unittest.TestCase):
         self.assertIn("Impressão A4", options)
         self.assertIn("E-reader", options)
         self.assertIn("Estudo tático", options)
+        self.assertIn("Manuscrito editorial", options)
+        self.assertIn("Alto contraste", options)
+        self.assertIn("Revista enxadrista", options)
+        self.assertIn("Tabuleiro verde", options)
+        self.assertIn("Minimalista amplo", options)
         self.assertIn("Clássico sem fundo", options)
         self.assertIn("Moderno limpo sem fundo", options)
         self.assertIn("Impressão A4 sem fundo", options)
@@ -94,6 +99,10 @@ class ConversionTests(unittest.TestCase):
 
         modern_css = html_export.load_css_preset("modern")
         self.assertIn("Segoe UI", modern_css)
+
+        magazine_css = html_export.load_css_preset("magazine")
+        self.assertEqual(options["Revista enxadrista"], "magazine")
+        self.assertIn("#c03d2e", magazine_css)
 
         plain_css = html_export.load_css_preset("modern-plain")
         self.assertIn("Segoe UI", plain_css)

@@ -1,0 +1,32 @@
+body {
+    max-width: 760px;
+    background: #fffdf9;
+    color: #23201d;
+    font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    font-size: 18px;
+    line-height: 1.78;
+}
+
+.headers {
+    border-bottom-color: #8b6f47;
+    font-size: 1.22em;
+}
+
+p.mainline {
+    font-weight: bold;
+}
+
+p.comment {
+    background: #f6f1e8;
+    border-left-color: #8b6f47;
+    font-style: normal;
+}
+
+p.variant {
+    background: #fbf8f2;
+    border-left-color: #b99d71;
+}
+
+.toc a {
+    border-bottom-color: #8b6f47;
+}

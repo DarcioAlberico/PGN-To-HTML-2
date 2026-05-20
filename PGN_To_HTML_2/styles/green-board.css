@@ -1,0 +1,31 @@
+body {
+    max-width: 820px;
+    background: #fbfdf9;
+    color: #18251d;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 18px;
+    line-height: 1.72;
+}
+
+.headers {
+    border-bottom-color: #2f6b4f;
+}
+
+p.mainline {
+    font-weight: bold;
+}
+
+p.comment {
+    background: #eef7ef;
+    border-left-color: #2f6b4f;
+    font-style: normal;
+}
+
+p.variant {
+    background: #f4f0df;
+    border-left-color: #b39a4f;
+}
+
+.toc {
+    border-bottom-color: #2f6b4f;
+}

@@ -1,0 +1,33 @@
+body {
+    max-width: 900px;
+    background: #f9fafb;
+    color: #202833;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.68;
+}
+
+.headers {
+    border-bottom: 2px solid #c03d2e;
+    font-variant: normal;
+    letter-spacing: 0;
+}
+
+p.mainline {
+    font-weight: bold;
+}
+
+p.comment {
+    background: #fff4e8;
+    border-left-color: #c03d2e;
+    font-style: normal;
+}
+
+p.variant {
+    background: #eef3f8;
+    border-left-color: #2f6f9f;
+}
+
+.diagram img {
+    box-shadow: 0 2px 10px rgba(32, 40, 51, 0.18);
+}

@@ -158,6 +158,11 @@ A interface oferece presets de tema no seletor "Tema":
 - Impressão A4
 - E-reader
 - Estudo tático
+- Manuscrito editorial
+- Alto contraste
+- Revista enxadrista
+- Tabuleiro verde
+- Minimalista amplo
 - Clássico sem fundo
 - Moderno limpo sem fundo
 - Impressão A4 sem fundo

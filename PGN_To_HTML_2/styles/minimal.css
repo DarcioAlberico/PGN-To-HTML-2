@@ -1,0 +1,31 @@
+body {
+    max-width: 780px;
+    background: #ffffff;
+    color: #202020;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.8;
+}
+
+.headers {
+    border-bottom: 1px solid #d0d0d0;
+    font-variant: normal;
+    letter-spacing: 0;
+}
+
+p.mainline {
+    font-weight: bold;
+}
+
+p.comment {
+    background: transparent;
+    border-left: none;
+    padding-left: 0;
+    margin-left: 0;
+    font-style: normal;
+}
+
+p.variant {
+    background: transparent;
+    border-left: 2px solid #d0d0d0;
+}
