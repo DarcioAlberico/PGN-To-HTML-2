@@ -302,7 +302,7 @@ def _is_parse_failure(exc):
     return isinstance(exc, parse_error_types)
 
 
-DIAGRAM_COMMENT_PATTERN = re.compile(r"(?:#diagram\b|\[%\s*diagram\s*\])", re.IGNORECASE)
+DIAGRAM_COMMENT_PATTERN = re.compile(r"(?:#diagram\b|\[%\s*diagram\s*\]|\[#\])", re.IGNORECASE)
 EXERCISE_COMMENT_PATTERN = re.compile(
     r"(?:#exercise\b(?P<hash_text>.*)|\[%\s*exercise(?:\s+\"(?P<bracket_quoted>[^\"]*)\"|\s+(?P<bracket_text>[^\]]*))?\])",
     re.IGNORECASE | re.DOTALL,

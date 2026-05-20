@@ -155,6 +155,23 @@ class ConversionTests(unittest.TestCase):
             self.assertNotIn("#diagram", result.blocks[0])
             self.assertIn(result.diagram_assets[0].web_path, result.blocks[0])
 
+    def test_hash_bracket_comment_generates_diagram_after_move(self):
+        pgn = """[Event "HashBracketDiagram"]
+[Site "?"]
+[Date "2026.03.23"]
+[White "W"]
+[Black "B"]
+[Result "*"]
+
+1. e4 {[#]} e5 *
+"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = app.convert_pgn(pgn, output_dir=temp_dir)
+
+            self.assertEqual(len(result.diagram_assets), 1)
+            self.assertIn('class="diagram"', result.blocks[0])
+            self.assertNotIn("[#]", result.blocks[0])
+
     def test_infer_fen_from_html_cursor_after_move(self):
         pgn = """[Event "CursorDiagram"]
 [Site "?"]
