@@ -236,6 +236,8 @@ class App:
         self.cancel_event = threading.Event()
         self.processing_active = False
         self.preview_dir = None
+        self.manual_diagram_temp = tempfile.TemporaryDirectory(prefix="pgn_manual_diagrams_")
+        self.manual_diagram_root = self.manual_diagram_temp.name
         self.html_viewer_dirty = False
         self.viewer_last_mode = "completo"
         self.force_full_viewer_load = False
@@ -947,6 +949,46 @@ class App:
             flags=re.IGNORECASE,
         )
 
+    def _rewrite_viewer_diagram_urls(self, html_text):
+        if self.conversion_result is None or not self.conversion_result.diagram_assets:
+            return html_text
+
+        asset_paths = {}
+        for asset in self.conversion_result.diagram_assets:
+            for asset_path in (asset.svg_path, asset.png_path):
+                if not asset_path or not os.path.isfile(asset_path):
+                    continue
+                file_name = os.path.basename(asset_path)
+                asset_paths[f"Diagrams/{file_name}"] = asset_path
+                asset_paths[file_name] = asset_path
+            if asset.web_path and asset.svg_path and os.path.isfile(asset.svg_path):
+                asset_paths[asset.web_path.replace("\\", "/")] = asset.svg_path
+
+        def replace_src(match):
+            quote = match.group(1)
+            src = match.group(2).replace("\\", "/")
+            asset_path = asset_paths.get(src)
+            if not asset_path:
+                asset_path = asset_paths.get(os.path.basename(src))
+            if not asset_path:
+                return match.group(0)
+
+            extension = os.path.splitext(asset_path)[1].lower()
+            media_type = "image/svg+xml" if extension == ".svg" else "image/png"
+            try:
+                with open(asset_path, "rb") as file_obj:
+                    encoded = base64.b64encode(file_obj.read()).decode("ascii")
+                return f'src={quote}data:{media_type};base64,{encoded}{quote}'
+            except Exception:
+                return match.group(0)
+
+        return re.sub(
+            r'src=(["\'])(Diagrams/[^"\']+\.(?:svg|png))\1',
+            replace_src,
+            html_text,
+            flags=re.IGNORECASE,
+        )
+
     def _split_html_body(self, html_text):
         body_match = re.search(r"(<body\b[^>]*>)(.*?)(</body>)", html_text, re.IGNORECASE | re.DOTALL)
         if not body_match:
@@ -979,6 +1021,7 @@ class App:
 
     def build_viewer_html(self, html_text, force_full_document=False):
         marked_html = self._inject_viewer_helper_style(self._inject_source_line_markers(html_text))
+        marked_html = self._rewrite_viewer_diagram_urls(marked_html)
         if force_full_document or not self.is_large_html_document():
             return self._rewrite_viewer_font_urls(marked_html), "completo"
 
@@ -1193,6 +1236,11 @@ class App:
         with open(os.path.join(output_dir, "style.css"), "w", encoding="utf-8") as file_obj:
             file_obj.write(self.get_current_css_text())
 
+    def get_manual_diagram_dir(self):
+        diagram_dir = os.path.join(self.manual_diagram_root, "Diagrams")
+        os.makedirs(diagram_dir, exist_ok=True)
+        return diagram_dir
+
     def gerar_diagrama_no_html(self):
         pgn_text = self.txt_pgn.toPlainText().strip()
         html_text = self.txt_html.toPlainText()
@@ -1204,7 +1252,7 @@ class App:
         insert_pos = cursor.position()
         try:
             fen = self.backend.infer_fen_from_html_cursor(pgn_text, html_text, insert_pos)
-            diagram_dir = os.path.join(os.path.abspath(self.pgn_dir or "."), "Diagrams")
+            diagram_dir = self.get_manual_diagram_dir()
             diagram_result = self.backend.chess_diagrams.render_diagram_html(
                 fen,
                 output_dir=diagram_dir,
@@ -1212,7 +1260,7 @@ class App:
                 idx=insert_pos,
                 size=360,
                 style=self.get_effective_diagram_style(),
-                web_root=os.path.abspath(self.pgn_dir or "."),
+                web_root=self.manual_diagram_root,
             )
             snippet = "\n\n" + diagram_result["html"] + "\n" + self.backend._generate_analysis_links(fen) + "\n"
             cursor.insertText(snippet)

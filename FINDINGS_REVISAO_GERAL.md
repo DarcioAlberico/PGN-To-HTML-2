@@ -56,6 +56,8 @@ Usar `get_current_css_text()` tambem na exportacao EPUB, garantindo que o EPUB r
 
 ## 4. Baixo/Medio - Gerar Diagrama usa a pasta do PGN para imagens manuais
 
+Status: implementado. O botao `Gerar Diagrama` agora grava imagens manuais em uma pasta temporaria controlada pelo app, registra os assets no resultado atual e o salvamento continua copiando os arquivos para `Diagrams` no destino final. O preview tambem reescreve os `src="Diagrams/..."` registrados para data URI, permitindo visualizar diagramas manuais antes de salvar o bundle.
+
 Arquivo relacionado:
 
 - `PGN_To_HTML_2/pgn_qt_window.py`
