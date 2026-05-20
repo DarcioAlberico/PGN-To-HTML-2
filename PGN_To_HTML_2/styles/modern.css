@@ -12,6 +12,10 @@ body {
     font-size: 1.2em;
 }
 
+p.mainline {
+    font-weight: bold;
+}
+
 p.comment {
     background: #eef4f8;
     border-left-color: #3b82f6;

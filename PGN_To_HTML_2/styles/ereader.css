@@ -15,6 +15,7 @@ body {
 
 p.mainline {
     text-align: left;
+    font-weight: bold;
 }
 
 p.comment,

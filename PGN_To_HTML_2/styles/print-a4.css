@@ -11,6 +11,10 @@ body {
     box-shadow: none;
 }
 
+p.mainline {
+    font-weight: bold;
+}
+
 p.comment {
     background: #f4f4f4;
     border-left-color: #555555;

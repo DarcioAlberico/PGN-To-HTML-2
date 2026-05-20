@@ -9,6 +9,10 @@ body {
     border-bottom-color: #2f4858;
 }
 
+p.mainline {
+    font-weight: bold;
+}
+
 .diagram img,
 .diagram--merida .chess-merida-diagram {
     border: 2px solid #2f4858;

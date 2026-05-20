@@ -85,6 +85,7 @@ class ConversionTests(unittest.TestCase):
             css_text = html_export.load_css_preset(preset)
             self.assertIn(".diagram", css_text)
             self.assertIn(".headers", css_text)
+            self.assertRegex(css_text, r"p\.mainline\s*\{[^}]*font-weight:\s*bold")
 
         modern_css = html_export.load_css_preset("modern")
         self.assertIn("Segoe UI", modern_css)

@@ -65,6 +65,7 @@ body {
 p.mainline {
     margin: 14px 0;
     text-align: justify;
+    font-weight: bold;
 }
 
 /* Comentários (parágrafo fora de variantes) */
