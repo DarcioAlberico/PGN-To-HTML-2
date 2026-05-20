@@ -11,6 +11,7 @@ import webbrowser
 import tempfile
 import queue
 import io
+import json
 from datetime import datetime
 from html.parser import HTMLParser
 from typing import Callable
@@ -1467,11 +1468,14 @@ class LegacyTkApp:
         self.root.geometry("1450x920")
         self.root.configure(bg="#f4f4f4")
         self.project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        self.settings_path = os.path.join(self.project_dir, ".pgn_to_html_settings.json")
+        self.user_settings = self.load_user_settings()
         
         self.blocks = None
         self.conversion_result = None
         self.queue = queue.Queue()
-        self.pgn_dir = "."
+        self.last_dir = self.resolve_existing_dir(self.user_settings.get("last_dir", "."))
+        self.pgn_dir = self.last_dir
         self.preview_dir = None
         self.html_viewer_job = None
         self.html_highlight_job = None
@@ -1686,6 +1690,47 @@ class LegacyTkApp:
 
     def get_selected_exercise_mode(self):
         return self.exercise_mode_options.get(self.exercise_mode_label.get(), "book")
+
+    def load_user_settings(self):
+        try:
+            with open(self.settings_path, "r", encoding="utf-8") as file_obj:
+                data = json.load(file_obj)
+            return data if isinstance(data, dict) else {}
+        except (OSError, json.JSONDecodeError):
+            return {}
+
+    def save_user_settings(self):
+        data = dict(self.user_settings)
+        data["last_dir"] = self.last_dir
+        self.user_settings = data
+        try:
+            with open(self.settings_path, "w", encoding="utf-8") as file_obj:
+                json.dump(data, file_obj, indent=2)
+        except OSError:
+            pass
+
+    def resolve_existing_dir(self, path):
+        candidate = os.path.abspath(path or ".")
+        if os.path.isfile(candidate):
+            candidate = os.path.dirname(candidate)
+        while candidate and not os.path.isdir(candidate):
+            parent = os.path.dirname(candidate)
+            if parent == candidate:
+                return os.path.abspath(".")
+            candidate = parent
+        return candidate or os.path.abspath(".")
+
+    def remember_file_dir(self, path):
+        if not path:
+            return
+        self.last_dir = self.resolve_existing_dir(os.path.dirname(path) or path)
+        self.pgn_dir = self.last_dir
+        self.save_user_settings()
+
+    def initial_file_path(self, filename=""):
+        if not filename:
+            return self.last_dir
+        return os.path.join(self.last_dir, filename)
 
     def build_selected_preset_css(self):
         return load_css_preset(
@@ -2214,9 +2259,13 @@ class LegacyTkApp:
             self.schedule_html_viewer_update(delay_ms=350)
 
     def load_css_file(self):
-        arq = filedialog.askopenfilename(filetypes=[("CSS", "*.css"), ("Todos", "*.*")])
+        arq = filedialog.askopenfilename(
+            initialdir=self.last_dir,
+            filetypes=[("CSS", "*.css"), ("Todos", "*.*")],
+        )
         if not arq:
             return
+        self.remember_file_dir(arq)
         try:
             with open(arq, "r", encoding="utf-8", errors="ignore") as f:
                 css_text = ensure_diagram_font_css(
@@ -2235,9 +2284,15 @@ class LegacyTkApp:
         if not css_text.strip():
             messagebox.showwarning("Aviso", "Nao ha CSS para salvar.")
             return
-        arq = filedialog.asksaveasfilename(defaultextension=".css", filetypes=[("CSS", "*.css")])
+        arq = filedialog.asksaveasfilename(
+            initialdir=self.last_dir,
+            initialfile="style.css",
+            defaultextension=".css",
+            filetypes=[("CSS", "*.css")],
+        )
         if not arq:
             return
+        self.remember_file_dir(arq)
         try:
             with open(arq, "w", encoding="utf-8") as f:
                 f.write(css_text)
@@ -2300,9 +2355,12 @@ class LegacyTkApp:
             f.write(self.get_current_css_text())
 
     def abrir(self):
-        arq = filedialog.askopenfilename(filetypes=[("PGN", "*.pgn")])
+        arq = filedialog.askopenfilename(
+            initialdir=self.last_dir,
+            filetypes=[("PGN", "*.pgn")],
+        )
         if arq:
-            self.pgn_dir = os.path.dirname(arq)
+            self.remember_file_dir(arq)
             self.txt_pgn.delete("1.0", "end")
             try:
                 with open(arq, "r", encoding="utf-8", errors="ignore") as f:
@@ -2534,9 +2592,15 @@ class LegacyTkApp:
             messagebox.showwarning("Aviso", "Processe o PGN primeiro.")
             return
 
-        arq = filedialog.asksaveasfilename(defaultextension=".html", filetypes=[("HTML", "*.html")])
+        arq = filedialog.asksaveasfilename(
+            initialdir=self.last_dir,
+            initialfile="livro.html",
+            defaultextension=".html",
+            filetypes=[("HTML", "*.html")],
+        )
         if not arq:
             return
+        self.remember_file_dir(arq)
 
         try:
             self.write_current_html_bundle(arq)
@@ -2550,9 +2614,15 @@ class LegacyTkApp:
             messagebox.showwarning("Aviso", "Cole ou abra um arquivo PGN primeiro!")
             return
 
-        arq = filedialog.asksaveasfilename(defaultextension=".epub")
+        arq = filedialog.asksaveasfilename(
+            initialdir=self.last_dir,
+            initialfile="livro.epub",
+            defaultextension=".epub",
+            filetypes=[("EPUB", "*.epub")],
+        )
         if not arq:
             return
+        self.remember_file_dir(arq)
 
         try:
             with tempfile.TemporaryDirectory(prefix="pgn_epub_") as temp_dir:
@@ -2656,9 +2726,15 @@ class LegacyTkApp:
             messagebox.showwarning("Aviso", "Cole ou abra um arquivo PGN primeiro!")
             return
 
-        arq = filedialog.asksaveasfilename(defaultextension=".docx", filetypes=[("DOCX", "*.docx")])
+        arq = filedialog.asksaveasfilename(
+            initialdir=self.last_dir,
+            initialfile="livro.docx",
+            defaultextension=".docx",
+            filetypes=[("DOCX", "*.docx")],
+        )
         if not arq:
             return
+        self.remember_file_dir(arq)
 
         try:
             pasta = os.path.dirname(arq)
@@ -2682,9 +2758,15 @@ class LegacyTkApp:
             messagebox.showwarning("Aviso", "Cole ou abra um arquivo PGN primeiro!")
             return
 
-        arq = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF", "*.pdf")])
+        arq = filedialog.asksaveasfilename(
+            initialdir=self.last_dir,
+            initialfile="livro.pdf",
+            defaultextension=".pdf",
+            filetypes=[("PDF", "*.pdf")],
+        )
         if not arq:
             return
+        self.remember_file_dir(arq)
 
         try:
             with tempfile.TemporaryDirectory(prefix="pgn_pdf_source_") as temp_dir:

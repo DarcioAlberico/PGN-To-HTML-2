@@ -87,6 +87,8 @@ As preferências locais do motor ficam em `.pgn_to_html_settings.json`, arquivo 
 
 Durante uma análise longa, use `Cancelar` para parar ao fim da etapa atual. A chamada em execução do motor termina antes do cancelamento ser aplicado.
 
+O mesmo arquivo de preferências guarda a última pasta usada para abrir PGN ou salvar HTML, EPUB, DOCX, PDF e CSS.
+
 ## Sumário
 
 O HTML final inclui automaticamente um sumário navegável quando o PGN tem uma ou mais partidas. Cada partida recebe um identificador estável, como `game-1`, `game-2`, e o índice usa os metadados do PGN: jogadores, ECO, evento, local, data e resultado.

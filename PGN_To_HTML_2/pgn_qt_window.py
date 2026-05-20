@@ -230,7 +230,6 @@ class App:
         self.queue = queue.Queue()
         self.cancel_event = threading.Event()
         self.processing_active = False
-        self.pgn_dir = "."
         self.preview_dir = None
         self.html_viewer_dirty = False
         self.viewer_last_mode = "completo"
@@ -250,6 +249,8 @@ class App:
             "Livro + exercícios": "both",
         }
         self.user_settings = self.load_user_settings()
+        self.last_dir = self.resolve_existing_dir(self.user_settings.get("last_dir", "."))
+        self.pgn_dir = self.last_dir
 
         self.html_viewer_timer = QTimer()
         self.html_viewer_timer.setSingleShot(True)
@@ -516,12 +517,36 @@ class App:
             "engine_enabled": self.engine_enabled_checkbox.isChecked(),
             "engine_path": self.engine_path_edit.text().strip(),
             "engine_depth": self.engine_depth_spin.value(),
+            "last_dir": self.last_dir,
         }
         try:
             with open(self.settings_path, "w", encoding="utf-8") as file_obj:
                 json.dump(data, file_obj, indent=2)
         except OSError:
             pass
+
+    def resolve_existing_dir(self, path):
+        candidate = os.path.abspath(path or ".")
+        if os.path.isfile(candidate):
+            candidate = os.path.dirname(candidate)
+        while candidate and not os.path.isdir(candidate):
+            parent = os.path.dirname(candidate)
+            if parent == candidate:
+                return os.path.abspath(".")
+            candidate = parent
+        return candidate or os.path.abspath(".")
+
+    def remember_file_dir(self, path):
+        if not path:
+            return
+        self.last_dir = self.resolve_existing_dir(os.path.dirname(path) or path)
+        self.pgn_dir = self.last_dir
+        self.save_user_settings()
+
+    def initial_file_path(self, extension=""):
+        if not extension:
+            return self.last_dir
+        return os.path.join(self.last_dir, extension)
 
     def choose_engine_path(self):
         current = self.engine_path_edit.text().strip()
@@ -1142,10 +1167,10 @@ class App:
             file_obj.write(self.get_current_css_text())
 
     def abrir(self):
-        arq, _ = QFileDialog.getOpenFileName(self.window, "Abrir PGN", self.pgn_dir, "PGN (*.pgn)")
+        arq, _ = QFileDialog.getOpenFileName(self.window, "Abrir PGN", self.last_dir, "PGN (*.pgn)")
         if not arq:
             return
-        self.pgn_dir = os.path.dirname(arq)
+        self.remember_file_dir(arq)
         try:
             with open(arq, "r", encoding="utf-8", errors="ignore") as file_obj:
                 self.txt_pgn.setPlainText(file_obj.read())
@@ -1432,9 +1457,15 @@ class App:
             QMessageBox.warning(self.window, "Aviso", "Processe o PGN primeiro.")
             return
 
-        arq, _ = QFileDialog.getSaveFileName(self.window, "Salvar HTML", "", "HTML (*.html)")
+        arq, _ = QFileDialog.getSaveFileName(
+            self.window,
+            "Salvar HTML",
+            self.initial_file_path("livro.html"),
+            "HTML (*.html)",
+        )
         if not arq:
             return
+        self.remember_file_dir(arq)
         try:
             self.write_current_html_bundle(arq)
             QMessageBox.information(self.window, "OK!", "HTML + CSS salvos com sucesso!")
@@ -1446,9 +1477,15 @@ class App:
         if not texto:
             QMessageBox.warning(self.window, "Aviso", "Cole ou abra um arquivo PGN primeiro!")
             return
-        arq, _ = QFileDialog.getSaveFileName(self.window, "Salvar EPUB", "", "EPUB (*.epub)")
+        arq, _ = QFileDialog.getSaveFileName(
+            self.window,
+            "Salvar EPUB",
+            self.initial_file_path("livro.epub"),
+            "EPUB (*.epub)",
+        )
         if not arq:
             return
+        self.remember_file_dir(arq)
 
         try:
             with tempfile.TemporaryDirectory(prefix="pgn_epub_") as temp_dir:
@@ -1546,9 +1583,15 @@ class App:
             QMessageBox.warning(self.window, "Aviso", "Cole ou abra um arquivo PGN primeiro!")
             return
 
-        arq, _ = QFileDialog.getSaveFileName(self.window, "Salvar DOCX", "", "DOCX (*.docx)")
+        arq, _ = QFileDialog.getSaveFileName(
+            self.window,
+            "Salvar DOCX",
+            self.initial_file_path("livro.docx"),
+            "DOCX (*.docx)",
+        )
         if not arq:
             return
+        self.remember_file_dir(arq)
         try:
             engine_options = self.get_engine_options()
             result = self.backend.convert_pgn(
@@ -1572,9 +1615,15 @@ class App:
             QMessageBox.warning(self.window, "Aviso", "Cole ou abra um arquivo PGN primeiro!")
             return
 
-        arq, _ = QFileDialog.getSaveFileName(self.window, "Salvar PDF", "", "PDF (*.pdf)")
+        arq, _ = QFileDialog.getSaveFileName(
+            self.window,
+            "Salvar PDF",
+            self.initial_file_path("livro.pdf"),
+            "PDF (*.pdf)",
+        )
         if not arq:
             return
+        self.remember_file_dir(arq)
         try:
             with tempfile.TemporaryDirectory(prefix="pgn_pdf_source_") as temp_dir:
                 engine_options = self.get_engine_options()
@@ -1593,9 +1642,15 @@ class App:
             QMessageBox.critical(self.window, "Erro PDF", str(exc))
 
     def load_css_file(self):
-        arq, _ = QFileDialog.getOpenFileName(self.window, "Carregar CSS", "", "CSS (*.css);;Todos (*.*)")
+        arq, _ = QFileDialog.getOpenFileName(
+            self.window,
+            "Carregar CSS",
+            self.last_dir,
+            "CSS (*.css);;Todos (*.*)",
+        )
         if not arq:
             return
+        self.remember_file_dir(arq)
         try:
             with open(arq, "r", encoding="utf-8", errors="ignore") as file_obj:
                 css_text = file_obj.read()
@@ -1611,9 +1666,15 @@ class App:
         if not css_text.strip():
             QMessageBox.warning(self.window, "Aviso", "Nao ha CSS para salvar.")
             return
-        arq, _ = QFileDialog.getSaveFileName(self.window, "Salvar CSS", "", "CSS (*.css)")
+        arq, _ = QFileDialog.getSaveFileName(
+            self.window,
+            "Salvar CSS",
+            self.initial_file_path("style.css"),
+            "CSS (*.css)",
+        )
         if not arq:
             return
+        self.remember_file_dir(arq)
         try:
             with open(arq, "w", encoding="utf-8") as file_obj:
                 file_obj.write(css_text)
