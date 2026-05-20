@@ -85,6 +85,11 @@ class ConversionTests(unittest.TestCase):
         self.assertIn("Revista enxadrista", options)
         self.assertIn("Tabuleiro verde", options)
         self.assertIn("Minimalista amplo", options)
+        self.assertIn("Manuscrito editorial - comentários limpos", options)
+        self.assertIn("Alto contraste - comentários limpos", options)
+        self.assertIn("Revista enxadrista - comentários limpos", options)
+        self.assertIn("Tabuleiro verde - comentários limpos", options)
+        self.assertIn("Minimalista amplo - comentários limpos", options)
         self.assertIn("Clássico sem fundo", options)
         self.assertIn("Moderno limpo sem fundo", options)
         self.assertIn("Impressão A4 sem fundo", options)
@@ -108,6 +113,12 @@ class ConversionTests(unittest.TestCase):
         self.assertIn("Segoe UI", plain_css)
         self.assertRegex(plain_css, r"p\.comment,\s*p\.variant\s*\{[^}]*background:\s*transparent")
         self.assertRegex(plain_css, r"p\.comment,\s*p\.variant\s*\{[^}]*border-left:\s*none")
+
+        flat_css = html_export.load_css_preset("magazine-flat-comments")
+        self.assertIn("#c03d2e", flat_css)
+        self.assertRegex(flat_css, r"p\.comment,\s*p\.variant\s*\{[^}]*margin:\s*0")
+        self.assertRegex(flat_css, r"p\.comment,\s*p\.variant\s*\{[^}]*padding:\s*0")
+        self.assertRegex(flat_css, r"p\.comment,\s*p\.variant\s*\{[^}]*border-left:\s*none")
 
     def test_css_preset_keeps_merida_font_face(self):
         import html_export

@@ -1,0 +1,6 @@
+p.comment,
+p.variant {
+    margin: 0;
+    padding: 0;
+    border-left: none;
+}

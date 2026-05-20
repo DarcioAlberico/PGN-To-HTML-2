@@ -163,6 +163,11 @@ A interface oferece presets de tema no seletor "Tema":
 - Revista enxadrista
 - Tabuleiro verde
 - Minimalista amplo
+- Manuscrito editorial - comentários limpos
+- Alto contraste - comentários limpos
+- Revista enxadrista - comentários limpos
+- Tabuleiro verde - comentários limpos
+- Minimalista amplo - comentários limpos
 - Clássico sem fundo
 - Moderno limpo sem fundo
 - Impressão A4 sem fundo
