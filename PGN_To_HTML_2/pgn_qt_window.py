@@ -228,6 +228,8 @@ class App:
         self.blocks = None
         self.conversion_result = None
         self.queue = queue.Queue()
+        self.cancel_event = threading.Event()
+        self.processing_active = False
         self.pgn_dir = "."
         self.preview_dir = None
         self.html_viewer_dirty = False
@@ -293,6 +295,9 @@ class App:
         buttons.append(("Salvar PDF", self.salvar_pdf, "#455a64"))
         for text, callback, color in buttons:
             button_row.addWidget(self._make_button(text, callback, color))
+        self.cancel_button = self._make_button("Cancelar", self.cancelar_processamento, "#c0392b")
+        self.cancel_button.setEnabled(False)
+        button_row.addWidget(self.cancel_button)
         button_row.addStretch(1)
         top_layout.addLayout(button_row)
 
@@ -1312,9 +1317,16 @@ class App:
             QMessageBox.warning(self.window, "Aviso", "Cole ou abra um arquivo PGN primeiro!")
             return
 
+        if self.processing_active:
+            QMessageBox.information(self.window, "Processamento", "Ja existe um processamento em andamento.")
+            return
+
         self.blocks = None
         self.conversion_result = None
         self.set_html_text("")
+        self.cancel_event.clear()
+        self.processing_active = True
+        self.cancel_button.setEnabled(True)
         self.progress_bar.setRange(0, 0)
         self.status_lbl.setText("Processando...")
         diagram_style = self.get_selected_diagram_style()
@@ -1333,10 +1345,18 @@ class App:
                 engine_options["engine_path"],
                 engine_options["engine_depth"],
                 engine_options["include_engine_analysis"],
+                self.cancel_event,
             ),
             daemon=True,
         ).start()
         self.queue_timer.start(100)
+
+    def cancelar_processamento(self):
+        if not self.processing_active:
+            return
+        self.cancel_event.set()
+        self.cancel_button.setEnabled(False)
+        self.status_lbl.setText("Cancelando ao fim da etapa atual...")
 
     def check_queue(self):
         try:
@@ -1346,6 +1366,8 @@ class App:
                     self.status_lbl.setText(data)
                 elif msg_type == "error":
                     self.queue_timer.stop()
+                    self.processing_active = False
+                    self.cancel_button.setEnabled(False)
                     self.progress_bar.setRange(0, 1)
                     self.progress_bar.setValue(0)
                     self.status_lbl.setText("Falha no processamento.")
@@ -1353,6 +1375,8 @@ class App:
                     return
                 elif msg_type == "done":
                     self.queue_timer.stop()
+                    self.processing_active = False
+                    self.cancel_button.setEnabled(False)
                     self.conversion_result = data
                     self.blocks = data.blocks
                     self.populate_game_navigation(data.summaries)
@@ -1383,6 +1407,8 @@ class App:
             return
         except Exception as exc:
             self.queue_timer.stop()
+            self.processing_active = False
+            self.cancel_button.setEnabled(False)
             self.progress_bar.setRange(0, 1)
             self.progress_bar.setValue(0)
             self.status_lbl.setText("Falha no processamento.")

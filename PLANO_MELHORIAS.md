@@ -894,6 +894,8 @@ python -m unittest discover -s tests -v
 
 ## 18. Riscos principais
 
+Status: concluido. As mitigações foram registradas no código e na documentação: análise Stockfish opcional com cancelamento cooperativo, dependências separadas entre básicas e opcionais, exportadores cobertos por testes e documentação deixando claro o limite do DOCX.
+
 1. Refatoração grande quebrar exportadores.
    - Mitigação: mover um módulo por vez e rodar testes sempre.
 

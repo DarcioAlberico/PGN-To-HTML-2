@@ -12,6 +12,10 @@ except ImportError:
     from models import MoveAnalysis
 
 
+class AnalysisCancelled(Exception):
+    pass
+
+
 def _score_to_fields(score):
     if score is None:
         return None, None
@@ -29,6 +33,7 @@ def analyze_game(
     game_index=1,
     engine_factory: Callable[[str], object] | None = None,
     progress_callback: Callable[[str], None] | None = None,
+    cancel_callback: Callable[[], bool] | None = None,
 ) -> list[MoveAnalysis]:
     if not engine_path:
         return []
@@ -43,12 +48,16 @@ def analyze_game(
 
     try:
         for ply, move in enumerate(moves, start=1):
+            if cancel_callback and cancel_callback():
+                raise AnalysisCancelled("Analise cancelada pelo usuario.")
             san = board.san(move)
             board.push(move)
             if progress_callback:
                 progress_callback(f"Analisando partida {game_index}, lance {ply}/{total}...")
 
             info = engine.analyse(board, chess.engine.Limit(depth=depth))
+            if cancel_callback and cancel_callback():
+                raise AnalysisCancelled("Analise cancelada pelo usuario.")
             pov_score = info.get("score")
             if pov_score is not None:
                 pov_score = pov_score.pov(chess.WHITE)

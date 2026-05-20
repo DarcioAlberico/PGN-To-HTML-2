@@ -2,6 +2,7 @@
 import os
 import sys
 import tempfile
+import threading
 import unittest
 import zipfile
 
@@ -272,6 +273,43 @@ class ConversionTests(unittest.TestCase):
         self.assertEqual(len(result.blocks), 1)
         self.assertIn("1. d4 d5", result.blocks[0])
         self.assertTrue(any("Stockfish" in warning for warning in result.warnings))
+
+    def test_engine_analysis_can_be_cancelled(self):
+        class FakeEngine:
+            def analyse(self, board, limit):
+                return {
+                    "score": chess.engine.PovScore(chess.engine.Cp(10), chess.WHITE),
+                    "pv": list(board.legal_moves)[:1],
+                }
+
+            def quit(self):
+                pass
+
+        cancel_event = threading.Event()
+        calls = {"count": 0}
+
+        def progress(_message):
+            calls["count"] += 1
+            cancel_event.set()
+
+        pgn = """[Event "EngineCancel"]
+[White "W"]
+[Black "B"]
+[Result "*"]
+
+1. e4 e5 2. Nf3 Nc6 *
+"""
+        result = app.convert_pgn(
+            pgn,
+            progress_callback=progress,
+            include_engine_analysis=True,
+            engine_path="fake-stockfish",
+            engine_factory=lambda _path: FakeEngine(),
+            cancel_event=cancel_event,
+        )
+
+        self.assertFalse(result.blocks)
+        self.assertTrue(any("cancelada" in warning.lower() for warning in result.warnings))
 
     def test_classic_diagram_cache_reuses_same_asset_for_same_fen(self):
         fen = "8/8/8/8/8/8/8/K6k w - - 0 1"

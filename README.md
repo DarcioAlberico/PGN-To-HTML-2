@@ -14,6 +14,19 @@ python -m pip install -r requirements.txt
 python -m playwright install chromium
 ```
 
+Para uma instalação mais enxuta, use:
+
+```powershell
+python -m pip install -r requirements-base.txt
+```
+
+Recursos extras ficam em:
+
+```powershell
+python -m pip install -r requirements-optional.txt
+python -m playwright install chromium
+```
+
 ## Execução
 
 ```powershell
@@ -71,6 +84,8 @@ A interface Qt tem a opção `Análise Stockfish`. Para usar:
 Quando ativada, a análise adiciona uma pequena avaliação ao lado de cada lance, com tooltip indicando avaliação e melhor lance sugerido. A análise é opcional: sem caminho de motor, a conversão continua normal. Se o motor falhar, o aplicativo registra um aviso e mantém a exportação.
 
 As preferências locais do motor ficam em `.pgn_to_html_settings.json`, arquivo ignorado pelo Git.
+
+Durante uma análise longa, use `Cancelar` para parar ao fim da etapa atual. A chamada em execução do motor termina antes do cancelamento ser aplicado.
 
 ## Sumário
 

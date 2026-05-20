@@ -22,7 +22,7 @@ import chess
 # Gerador dedicado de diagramas
 try:
     from . import chess_diagrams
-    from .engine_analysis import analyses_by_ply, analyze_game
+    from .engine_analysis import AnalysisCancelled, analyses_by_ply, analyze_game
     from .html_export import (
         CSS,
         build_css,
@@ -37,7 +37,7 @@ try:
     from .pgn_validation import format_validation_report, validate_pgn
 except ImportError:
     import chess_diagrams
-    from engine_analysis import analyses_by_ply, analyze_game
+    from engine_analysis import AnalysisCancelled, analyses_by_ply, analyze_game
     from html_export import (
         CSS,
         build_css,
@@ -778,6 +778,7 @@ def convert_pgn(
     engine_depth=12,
     include_engine_analysis=False,
     engine_factory=None,
+    cancel_event=None,
 ):
     """
     Converte um texto PGN em HTML e ativos associados.
@@ -817,6 +818,10 @@ def convert_pgn(
         return result
 
     for processed_count, (count, game) in enumerate(indexed_games, start=1):
+        if cancel_event is not None and cancel_event.is_set():
+            result.warnings.append("Processamento cancelado pelo usuario.")
+            return result
+
         if progress_callback:
             progress_callback(f"Processando partida {processed_count}/{total}...")
 
@@ -835,8 +840,12 @@ def convert_pgn(
                         game_index=count,
                         engine_factory=engine_factory,
                         progress_callback=progress_callback,
+                        cancel_callback=cancel_event.is_set if cancel_event is not None else None,
                     )
                     result.analyses.extend(move_analyses)
+                except AnalysisCancelled:
+                    result.warnings.append("Analise Stockfish cancelada pelo usuario.")
+                    return result
                 except Exception as engine_exc:
                     result.warnings.append(
                         f"Partida {count}: analise Stockfish ignorada ({engine_exc})."
@@ -900,6 +909,7 @@ def processar_pgn_worker(
     engine_path=None,
     engine_depth=12,
     include_engine_analysis=False,
+    cancel_event=None,
 ):
     def _progress(message):
         progress_queue.put(("status", message))
@@ -915,6 +925,7 @@ def processar_pgn_worker(
             engine_path=engine_path,
             engine_depth=engine_depth,
             include_engine_analysis=include_engine_analysis,
+            cancel_event=cancel_event,
         )
         progress_queue.put(("done", result))
     except Exception as exc:
