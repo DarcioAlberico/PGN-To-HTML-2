@@ -4,6 +4,7 @@ import hashlib
 import os
 import re
 import shutil
+import sys
 from functools import lru_cache
 from io import BytesIO
 
@@ -187,6 +188,17 @@ def _iter_font_search_dirs():
         project_dir,
         os.path.join(project_dir, "ChessMeridaOCR"),
     ]
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        meipass = os.path.abspath(meipass)
+        candidate_dirs.extend(
+            [
+                os.path.join(meipass, FONT_OUTPUT_DIRNAME),
+                os.path.join(meipass, "PGN_To_HTML_2", FONT_OUTPUT_DIRNAME),
+                meipass,
+                os.path.join(meipass, "PGN_To_HTML_2"),
+            ]
+        )
 
     seen = set()
     for path in candidate_dirs:

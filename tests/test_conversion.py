@@ -128,6 +128,45 @@ class ConversionTests(unittest.TestCase):
         self.assertIn("@font-face", css_text)
         self.assertIn("chess-merida-diagram", css_text)
 
+    def test_css_preset_can_load_from_pyinstaller_meipass_layout(self):
+        import html_export
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            style_dir = os.path.join(temp_dir, "PGN_To_HTML_2", "styles")
+            os.makedirs(style_dir)
+            with open(os.path.join(style_dir, "modern.css"), "w", encoding="utf-8") as file_obj:
+                file_obj.write("body { color: #123456; }\np.mainline { font-weight: bold; }")
+
+            old_meipass = getattr(sys, "_MEIPASS", None)
+            sys._MEIPASS = temp_dir
+            html_export._load_preset_override.cache_clear()
+            try:
+                css_text = html_export.load_css_preset("modern")
+            finally:
+                html_export._load_preset_override.cache_clear()
+                if old_meipass is None:
+                    delattr(sys, "_MEIPASS")
+                else:
+                    sys._MEIPASS = old_meipass
+
+        self.assertIn("#123456", css_text)
+
+    def test_font_search_dirs_include_pyinstaller_meipass_layout(self):
+        old_meipass = getattr(sys, "_MEIPASS", None)
+        try:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                font_dir = os.path.join(temp_dir, "PGN_To_HTML_2", "Fonts")
+                os.makedirs(font_dir)
+                sys._MEIPASS = temp_dir
+                dirs = list(chess_diagrams._iter_font_search_dirs())
+        finally:
+            if old_meipass is None and hasattr(sys, "_MEIPASS"):
+                delattr(sys, "_MEIPASS")
+            elif old_meipass is not None:
+                sys._MEIPASS = old_meipass
+
+        self.assertIn(os.path.abspath(font_dir), dirs)
+
     def test_simple_pgn_generates_html(self):
         pgn = """[Event "NoFen"]
 [Site "?"]

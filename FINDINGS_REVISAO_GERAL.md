@@ -4,6 +4,8 @@ Data: 2026-05-20
 
 ## 1. Alto - Temas podem falhar no executavel empacotado
 
+Status: implementado. `html_export.py` agora busca temas em layouts normais e em `sys._MEIPASS`, incluindo `PGN_To_HTML_2/styles`; `chess_diagrams.py` faz o mesmo para fontes em `Fonts`. Foram adicionados testes simulando o layout PyInstaller.
+
 Arquivos relacionados:
 
 - `PGN_To_HTML_2/html_export.py`

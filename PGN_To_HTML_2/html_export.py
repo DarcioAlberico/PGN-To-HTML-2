@@ -2,6 +2,7 @@
 import os
 import re
 import html
+import sys
 from datetime import datetime
 from functools import lru_cache
 
@@ -225,6 +226,37 @@ def get_css_preset_options():
     return [(label, key) for key, (label, _filename) in STYLE_PRESETS.items()]
 
 
+def _iter_resource_roots():
+    module_dir = os.path.abspath(os.path.dirname(__file__))
+    project_dir = os.path.abspath(os.path.join(module_dir, ".."))
+    candidates = []
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        meipass = os.path.abspath(meipass)
+        candidates.extend([meipass, os.path.join(meipass, "PGN_To_HTML_2")])
+    candidates.extend([module_dir, project_dir])
+
+    seen = set()
+    for path in candidates:
+        resolved = os.path.abspath(path)
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        yield resolved
+
+
+def _find_style_path(filename):
+    for root in _iter_resource_roots():
+        for relative_path in (
+            os.path.join("styles", filename),
+            os.path.join("PGN_To_HTML_2", "styles", filename),
+        ):
+            candidate = os.path.join(root, relative_path)
+            if os.path.isfile(candidate):
+                return candidate
+    raise FileNotFoundError(f"Tema CSS nao encontrado: {filename}")
+
+
 @lru_cache(maxsize=None)
 def _load_preset_override(preset):
     preset_key = normalize_css_preset(preset)
@@ -236,7 +268,7 @@ def _load_preset_override(preset):
 
     css_parts = []
     for filename in filenames:
-        style_path = os.path.join(os.path.dirname(__file__), "styles", filename)
+        style_path = _find_style_path(filename)
         with open(style_path, "r", encoding="utf-8") as file_obj:
             css_parts.append(file_obj.read().strip())
     return "\n\n".join(part for part in css_parts if part)
